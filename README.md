@@ -7,11 +7,11 @@
 - **Customized UI**
 - **Normal Or pin broadcast**
 
-### Start Command 
+### Deploy Start Command 
 ```
  gunicorn app:app & python3 main.py
 ```
-### Build Command 
+### Deploy Build Command 
 ```
 pip install -r requirements.txt
 ```
