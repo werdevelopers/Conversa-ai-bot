@@ -81,7 +81,7 @@ async def start(client, message):
             [
                 [InlineKeyboardButton('✨ Updates Channel', url=f"https://t.me/{UPDATE_CHANNEL}")],
                 [InlineKeyboardButton('Help', callback_data='help'), InlineKeyboardButton('About', callback_data='about')],
-                [InlineKeyboardButton('Close', callback_data='close')]
+                [InlineKeyboardButton('Source Code', url='https://youtu.be/NOO7XVqIHmk')]
             ]
         ),
         disable_web_page_preview=True
@@ -149,7 +149,7 @@ async def home_callback(client, callback_query):
             [
                 [InlineKeyboardButton('✨ Updates Channel', url=f"https://t.me/{UPDATE_CHANNEL}")],
                 [InlineKeyboardButton('About', callback_data='about'), InlineKeyboardButton('Help', callback_data='help')],
-                [InlineKeyboardButton('Close', callback_data='close')]
+                [InlineKeyboardButton('Source Code', url='https://youtu.be/NOO7XVqIHmk')]
             ]
         ),
         disable_web_page_preview=True
