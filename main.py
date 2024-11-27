@@ -261,7 +261,6 @@ async def private_ai_reply(client, message):
 # 	    IMAGE SCAN CODE
 # ==========================================
 
-
 @aibot.on_message(filters.media)
 async def handle_media(client, message):
     if UPDATE_CHANNEL:
@@ -274,7 +273,8 @@ async def handle_media(client, message):
             await message.reply_text(
                 text=f"**{message.from_user.mention} 👋\n\nJoin My Updated Channel to use me. (without join you can't use me)**",
                 reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton(text="Join Now", url=f"https://telegram.me/{UPDATE_CHANNEL}")]]
+                    [[InlineKeyboardButton(
+                        text="Join Now", url=f"https://telegram.me/{UPDATE_CHANNEL}")]]
                 )
             )
             return
@@ -285,39 +285,87 @@ async def handle_media(client, message):
                 disable_web_page_preview=True
             )
             return
-    
+
+    file_size_limit = 10 * 1024 * 1024  # 10 MB in bytes
+    if (message.document and message.document.file_size > file_size_limit) or \
+       (message.photo and message.photo.file_size > file_size_limit):
+        await message.reply_text("<b>Send a media under 10MB ‼️</b>")
+        return
+
     try:
         if message.photo:
             if message.caption:
                 query = message.caption
             else:
-                tutorial_button = InlineKeyboardButton("Tutorial 📌", callback_data="tutorial")
+                tutorial_button = InlineKeyboardButton(
+                    "Tutorial 📌", callback_data="tutorial")
                 reply_markup = InlineKeyboardMarkup([[tutorial_button]])
                 await message.reply_text(
                     "**❗ Please send the photo with a caption. In the caption, describe the problem or query you want to check.**",
                     reply_markup=reply_markup
                 )
                 return
-            
-            k = await message.reply_text(f"**🔍 {message.from_user.mention}, Please wait....**")
-            media = await message.download()
-            m = await k.edit("**checking your query...**")
 
-            mag = ImageUploader(media)
-            api = "https://horridapi.onrender.com/search"
-            img_url = mag.upload()
-            response = requests.get(f"{api}?img={img_url}&query={query}")
-            
+            downloading_message = await message.reply_text(f"**🔍 {message.from_user.mention}, Downloading your media....**")
+            media_path = await message.download()
+            await downloading_message.edit_text("**Uploading your media for processing....**")
+            upload_url = "https://envs.sh"
+            try:
+                with open(media_path, 'rb') as file:
+                    files = {'file': file}
+                    response = requests.post(upload_url, files=files)
+
+                    if response.status_code == 200:
+                        image_url = response.text.strip()
+                    else:
+                        raise Exception(f"Upload failed with status code {response.status_code}")
+            except Exception as upload_error:
+                await downloading_message.edit_text(f"**Upload failed: {upload_error}**")
+                return
+            finally:
+                try:
+                    os.remove(media_path)
+                except Exception as error:
+                    print(f"Error removing file: {error}")
+
+            await downloading_message.edit_text(f"**🔍 {message.from_user.mention}, Please wait....**")
+            prompt = query.replace(" ", "+")
+            api = "https://nexlynx.ashlynn.workers.dev/api/titan"
+            response = requests.get(
+                f"{api}?question={prompt}&image={image_url}")
+
             if response.status_code == 200:
                 result = response.json()
-                await m.edit(f"👤 {message.from_user.mention}, here's what I found:\n\n{result['response']}")
+                await downloading_message.edit_text(f"👤 {message.from_user.mention}, here's what I found:\n\n{result['message']}")
             else:
-                await m.edit("⚠️ There was an error processing your request. Please try again later.")
+                await downloading_message.edit_text("⚠️ There was an error processing your request. Please try again later.")
         elif message.video or message.animation:
             await message.reply_text("❗ Please send me only a photo, not a video or GIF.")
     except Exception as e:
         await message.reply_text("❌ **An error occurred while processing your request.**")
         print(f"Error: {e}")
+
+
+# ======================
+# Upload to envs code
+# ======================
+
+def upload_image_requests(media_path):
+    upload_url = "https://envs.sh"
+
+    try:
+        with open(media_path, 'rb') as file:
+            files = {'file': file}
+            response = requests.post(upload_url, files=files)
+
+            if response.status_code == 200:
+                return response.text.strip()
+            else:
+                raise Exception(f"Upload failed with status code {response.status_code}")
+
+    except Exception as e:
+        print(f"Error during upload: {e}")
+        return None
 
 
 # ==========================================
